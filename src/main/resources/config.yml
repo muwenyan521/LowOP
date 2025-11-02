@@ -1,0 +1,104 @@
+# LowOP 插件配置文件
+# 版本: 1.0.0
+
+# 插件设置
+settings:
+  # 是否启用插件
+  enabled: true
+  # 调试模式
+  debug: false
+  # 自动保存间隔（秒）
+  auto-save-interval: 300
+  # 最大审计日志条目数
+  max-audit-entries: 1000
+  # 命令冷却时间（秒）
+  command-cooldown: 3
+  # 批量操作最大玩家数
+  batch-max-players: 10
+
+# 权限组配置
+permission-groups:
+  # 管理员权限组
+  admin-group: "otherop"
+  # 默认权限组
+  default-group: "default"
+  # 是否在设置权限时清除现有权限
+  clear-existing: true
+
+# 消息配置
+messages:
+  # 权限启用消息
+  permission-enabled: "&a你已成为服务器管理员。"
+  # 权限禁用消息
+  permission-disabled: "&c你的管理员权限已被移除。"
+  # 权限恢复消息
+  permission-restored: "&a你的管理员权限已自动恢复。"
+  # 管理员欢迎消息
+  admin-welcome: "&6欢迎回来，管理员！"
+  # 操作成功消息
+  operation-success: "&a操作成功完成。"
+  # 操作失败消息
+  operation-failed: "&c操作失败。"
+  # 玩家不在线消息
+  player-offline: "&c玩家 &6{player} &c不在线。"
+  # 无权限消息
+  no-permission: "&c你没有权限执行此操作。"
+  # 无效玩家消息
+  invalid-player: "&c无效的玩家名称: &6{player}"
+  # 批量操作结果
+  batch-result: "&a批量操作完成: &6{success}&a/&6{total} &a成功 ({operation})"
+
+# 审计日志配置
+audit:
+  # 是否启用审计日志
+  enabled: true
+  # 审计日志文件
+  log-file: "audit.log"
+  # 最大日志文件大小（MB）
+  max-file-size: 10
+  # 保留日志天数
+  retention-days: 30
+  # 记录的操作类型
+  log-operations:
+    - "permission-change"
+    - "player-join"
+    - "player-quit"
+    - "command-execution"
+    - "error"
+
+# 健康检查配置
+health:
+  # 是否启用健康检查
+  enabled: true
+  # 检查间隔（秒）
+  check-interval: 60
+  # 最大内存使用率警告阈值（%）
+  max-memory-usage: 80
+  # 最小可用磁盘空间警告（MB）
+  min-disk-space: 100
+
+# 数据库配置（未来扩展）
+database:
+  # 数据库类型: yaml, mysql, sqlite
+  type: "yaml"
+  # MySQL 配置（如果使用 MySQL）
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "lowop"
+    username: "root"
+    password: "password"
+    table-prefix: "lowop_"
+
+# 高级配置
+advanced:
+  # 是否异步执行权限操作
+  async-operations: true
+  # 最大重试次数
+  max-retries: 3
+  # 重试延迟（毫秒）
+  retry-delay: 1000
+  # 是否验证权限组存在
+  validate-groups: true
+  # 是否在玩家加入时检查权限状态
+  check-on-join: true

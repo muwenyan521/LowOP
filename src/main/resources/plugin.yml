@@ -1,0 +1,25 @@
+name: LowOP
+version: 1.0.0
+main: wangxianming.lowop.LowOP
+api-version: 1.21
+description: A production-ready permission management plugin for Minecraft servers
+author: WangXianming
+website: https://github.com/muwenyan521/LowOP
+
+commands:
+  lowop:
+    description: Manage player admin permissions
+    usage: /lowop <player> [on|off|status]
+    permission: lowop.manage
+    permission-message: "§cYou don't have permission to use this command."
+    aliases: [lop, admin]
+
+permissions:
+  lowop.manage:
+    description: Allows managing player admin permissions
+    default: op
+  lowop.*:
+    description: All LowOP permissions
+    default: op
+    children:
+      lowop.manage: true

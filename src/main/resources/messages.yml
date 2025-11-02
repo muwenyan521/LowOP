@@ -1,0 +1,95 @@
+# LowOP 插件消息配置文件
+# 版本: 1.0.0
+
+# 帮助消息
+help-message:
+  - "&6&lLowOP 插件帮助"
+  - "&7/lop &f<玩家名> [on/off] &7- 管理玩家权限"
+  - "&7/lop help &7- 显示此帮助信息"
+  - "&7/lop reload &7- 重载插件配置"
+  - "&7/lop status [玩家名] &7- 查看权限状态"
+  - "&7/lop health &7- 查看系统健康状态"
+  - "&7/lop audit <view/clear/export> &7- 管理审计日志"
+  - "&7/lop batch <add/remove/list/clear> [玩家名] &7- 批量操作"
+  - "&7/lop version &7- 显示插件版本"
+
+# 权限相关消息
+permission-enabled: "&a你已成为服务器管理员。"
+permission-disabled: "&c你的管理员权限已被移除。"
+permission-restored: "&a你的管理员权限已自动恢复。"
+admin-welcome: "&6欢迎回来，管理员！"
+
+# 操作结果消息
+operation-success: "&a操作成功完成。"
+operation-failed: "&c操作失败。"
+reload-success: "&a配置重载成功。"
+reload-failed: "&c配置重载失败。"
+
+# 错误消息
+no-permission: "&c你没有权限执行此操作。"
+player-offline: "&c玩家 &6{player} &c不在线。"
+invalid-player: "&c无效的玩家名称: &6{player}"
+invalid-command: "&c无效的命令用法。输入 &6/lop help &c查看帮助。"
+invalid-state: "&c状态参数必须是 'on' 或 'off'"
+cooldown-active: "&c请等待 &6{seconds} &c秒后再使用此命令。"
+rate-limit-exceeded: "&c操作过于频繁，请稍后再试。"
+
+# 批量操作消息
+batch-result: "&a批量操作完成: &6{success}&a/&6{total} &a成功 ({operation})"
+batch-empty: "&c批量操作列表为空。"
+batch-added: "&a已将 &6{player} &a添加到批量操作列表。"
+batch-removed: "&a已将 &6{player} &a从批量操作列表中移除。"
+batch-cleared: "&a批量操作列表已清空。"
+batch-list-header: "&6批量操作列表 (&6{count}&6):"
+batch-list-item: "&7- &f{player}"
+batch-max-players: "&c批量操作玩家数已达到上限 (&6{max}&c)。"
+
+# 状态消息
+status-header: "&6玩家权限状态:"
+status-admin: "&a● &f{player} &7- &a管理员"
+status-default: "&c● &f{player} &7- &c默认"
+status-offline: "&7● &f{player} &7- &7离线"
+status-unknown: "&e● &f{player} &7- &e未知"
+
+# 健康检查消息
+health-header: "&6系统健康状态:"
+health-ok: "&a✓ &f{component} &7- &a正常"
+health-warning: "&e⚠ &f{component} &7- &e警告: {message}"
+health-error: "&c✗ &f{component} &7- &c错误: {message}"
+health-memory: "内存使用率"
+health-disk: "磁盘空间"
+health-database: "数据库连接"
+health-audit: "审计日志"
+
+# 审计日志消息
+audit-header: "&6审计日志 (&6{count}&6):"
+audit-entry: "&8[{time}] &7{operator} &8→ &7{target} &8- &7{action}"
+audit-cleared: "&a审计日志已清空。"
+audit-exported: "&a审计日志已导出到: &6{file}"
+audit-empty: "&c审计日志为空。"
+
+# 版本信息
+version-info: "&6LowOP &7v{version} &8- &7作者: &f{author}"
+version-new: "&a有新版本可用: &6{new_version}&a，当前版本: &6{current_version}"
+
+# 系统消息
+system-error: "&c系统错误: {error}"
+config-error: "&c配置错误: {error}"
+file-error: "&c文件操作错误: {error}"
+database-error: "&c数据库错误: {error}"
+
+# 确认消息
+confirmation-required: "&e确认操作: &6{action} &e- 输入 &6/lop confirm &e确认"
+confirmation-success: "&a操作已确认并执行。"
+confirmation-expired: "&c确认已过期，请重新执行操作。"
+confirmation-cancelled: "&c操作已取消。"
+
+# 通知消息
+notification-permission-change: "&6你的权限状态已变更: &f{status}"
+notification-batch-complete: "&a批量权限操作已完成。"
+notification-system-alert: "&c系统警报: &f{message}"
+
+# 调试消息
+debug-enabled: "&7调试模式已启用。"
+debug-disabled: "&7调试模式已禁用。"
+debug-message: "&8[调试] &7{message}"
