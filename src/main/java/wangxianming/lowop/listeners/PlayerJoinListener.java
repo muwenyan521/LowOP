@@ -72,16 +72,16 @@ public class PlayerJoinListener implements Listener {
             // 权限状态不正确，需要修复
             auditManager.logPermissionFix(player.getName(), "登录时修复管理员权限");
             
-            // 执行权限修复
-            boolean success = permissionManager.setAdminPermissions(player.getName());
-            
-            if (success) {
-                messageUtils.sendMessage(player, "permission-restored");
-                auditManager.logPermissionRestore(player.getName(), "登录时自动恢复");
-            } else {
-                messageUtils.sendError(player, "管理员权限恢复失败，请联系管理员");
-                auditManager.logError("PlayerJoinListener", "restoreAdminPermissions", "玩家 " + player.getName() + " 管理员权限恢复失败");
-            }
+            // 执行权限修复 - 异步处理
+            permissionManager.setAdminPermissions(player.getName()).thenAccept(success -> {
+                if (success) {
+                    messageUtils.sendMessage(player, "permission-restored");
+                    auditManager.logPermissionRestore(player.getName(), "登录时自动恢复");
+                } else {
+                    messageUtils.sendError(player, "管理员权限恢复失败，请联系管理员");
+                    auditManager.logError("PlayerJoinListener", "restoreAdminPermissions", "玩家 " + player.getName() + " 管理员权限恢复失败");
+                }
+            });
         } else {
             // 权限状态正确，发送欢迎消息
             messageUtils.sendMessage(player, "admin-welcome");
@@ -99,14 +99,14 @@ public class PlayerJoinListener implements Listener {
             // 权限状态不正确，需要修复
             auditManager.logPermissionFix(player.getName(), "登录时修复默认权限");
             
-            // 执行权限修复
-            boolean success = permissionManager.setDefaultPermissions(player.getName());
-            
-            if (success) {
-                auditManager.logPermissionRestore(player.getName(), "登录时自动恢复默认权限");
-            } else {
-                auditManager.logError("PlayerJoinListener", "ensureDefaultPermissions", "玩家 " + player.getName() + " 默认权限恢复失败");
-            }
+            // 执行权限修复 - 异步处理
+            permissionManager.setDefaultPermissions(player.getName()).thenAccept(success -> {
+                if (success) {
+                    auditManager.logPermissionRestore(player.getName(), "登录时自动恢复默认权限");
+                } else {
+                    auditManager.logError("PlayerJoinListener", "ensureDefaultPermissions", "玩家 " + player.getName() + " 默认权限恢复失败");
+                }
+            });
         }
     }
     
