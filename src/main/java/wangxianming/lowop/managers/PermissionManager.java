@@ -163,6 +163,82 @@ public class PermissionManager {
         }
     }
 
+    // Check permission state for a player
+    public boolean checkPermissionState(String playerName, boolean expectedAdminState) {
+        try {
+            Player player = Bukkit.getPlayer(playerName);
+            if (player == null) {
+                return false;
+            }
+            
+            UUID playerUUID = player.getUniqueId();
+            boolean actualState = plugin.getStateManager().hasAdminState(playerUUID);
+            
+            return actualState == expectedAdminState;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Error checking permission state for " + playerName, e);
+            return false;
+        }
+    }
+
+    // Set admin permissions for a player by name
+    public CompletableFuture<Boolean> setAdminPermissions(String playerName) {
+        Player player = Bukkit.getPlayer(playerName);
+        if (player == null) {
+            CompletableFuture<Boolean> future = new CompletableFuture<>();
+            future.complete(false);
+            return future;
+        }
+        return setPlayerPermissions(player.getUniqueId(), true, Bukkit.getConsoleSender());
+    }
+
+    // Set default permissions for a player by name
+    public CompletableFuture<Boolean> setDefaultPermissions(String playerName) {
+        Player player = Bukkit.getPlayer(playerName);
+        if (player == null) {
+            CompletableFuture<Boolean> future = new CompletableFuture<>();
+            future.complete(false);
+            return future;
+        }
+        return setPlayerPermissions(player.getUniqueId(), false, Bukkit.getConsoleSender());
+    }
+
+    // Set player permissions by player name (overloaded version)
+    public CompletableFuture<Boolean> setPlayerPermissions(String playerName, boolean enableAdmin) {
+        Player player = Bukkit.getPlayer(playerName);
+        if (player == null) {
+            CompletableFuture<Boolean> future = new CompletableFuture<>();
+            future.complete(false);
+            return future;
+        }
+        return setPlayerPermissions(player.getUniqueId(), enableAdmin, Bukkit.getConsoleSender());
+    }
+
+    // Set multiple players permissions by player names (overloaded version)
+    public CompletableFuture<Integer> setMultiplePlayersPermissions(java.util.List<String> playerNames, boolean enableAdmin) {
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        
+        if (playerNames.isEmpty()) {
+            future.complete(0);
+            return future;
+        }
+
+        java.util.List<UUID> playerUUIDs = new java.util.ArrayList<>();
+        for (String playerName : playerNames) {
+            Player player = Bukkit.getPlayer(playerName);
+            if (player != null) {
+                playerUUIDs.add(player.getUniqueId());
+            }
+        }
+
+        if (playerUUIDs.isEmpty()) {
+            future.complete(0);
+            return future;
+        }
+
+        return setMultiplePlayersPermissions(playerUUIDs, enableAdmin, Bukkit.getConsoleSender());
+    }
+
     // Batch operations
     public CompletableFuture<Integer> setMultiplePlayersPermissions(java.util.List<UUID> playerUUIDs, 
                                                                    boolean enableAdmin, CommandSender executor) {

@@ -148,6 +148,10 @@ public class StateManager {
         return playerStates.containsKey(playerUUID);
     }
 
+    public boolean hasAdminState(UUID playerUUID) {
+        return playerStates.getOrDefault(playerUUID, false);
+    }
+
     public int getTotalPlayers() {
         return playerStates.size();
     }

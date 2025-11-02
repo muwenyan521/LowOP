@@ -22,8 +22,8 @@ public class LowOPCommand implements CommandExecutor {
 
     public LowOPCommand(LowOP plugin) {
         this.plugin = plugin;
-        this.messageUtils = new MessageUtils(plugin);
-        this.validationUtils = new ValidationUtils(plugin);
+        this.messageUtils = new MessageUtils(plugin.getConfigManager());
+        this.validationUtils = new ValidationUtils();
     }
 
     @Override
@@ -100,9 +100,10 @@ public class LowOPCommand implements CommandExecutor {
             int totalPlayers = plugin.getStateManager().getTotalPlayers();
             int adminCount = plugin.getStateManager().getAdminCount();
             
-            messageUtils.sendMessage(sender, "status-overall", 
-                "{total}", String.valueOf(totalPlayers),
-                "{admins}", String.valueOf(adminCount));
+            messageUtils.sendMessage(sender, "status-overall", java.util.Map.of(
+                "total", String.valueOf(totalPlayers),
+                "admins", String.valueOf(adminCount)
+            ));
             return true;
         }
 
@@ -111,7 +112,7 @@ public class LowOPCommand implements CommandExecutor {
         UUID playerUUID = validationUtils.getPlayerUUID(playerName);
         
         if (playerUUID == null) {
-            messageUtils.sendMessage(sender, "player-not-found", "{player}", playerName);
+            messageUtils.sendMessage(sender, "player-not-found", java.util.Map.of("player", playerName));
             return true;
         }
 
@@ -120,9 +121,10 @@ public class LowOPCommand implements CommandExecutor {
             plugin.getConfigManager().getMessage("messages.admin-status", "§a管理员") :
             plugin.getConfigManager().getMessage("messages.default-status", "§7普通玩家");
         
-        messageUtils.sendMessage(sender, "status-player", 
-            "{player}", playerName,
-            "{status}", status);
+        messageUtils.sendMessage(sender, "status-player", java.util.Map.of(
+            "player", playerName,
+            "status", status
+        ));
         return true;
     }
 
@@ -193,16 +195,18 @@ public class LowOPCommand implements CommandExecutor {
             return true;
         }
 
-        messageUtils.sendMessage(sender, "batch-processing", 
-            "{count}", String.valueOf(validPlayerUUIDs.size()),
-            "{operation}", enableAdmin ? "启用" : "禁用");
+        messageUtils.sendMessage(sender, "batch-processing", java.util.Map.of(
+            "count", String.valueOf(validPlayerUUIDs.size()),
+            "operation", enableAdmin ? "启用" : "禁用"
+        ));
 
         // Process batch operation
         plugin.getPermissionManager().setMultiplePlayersPermissions(validPlayerUUIDs, enableAdmin, sender)
             .thenAccept(successCount -> {
-                messageUtils.sendMessage(sender, "batch-completed",
-                    "{success}", String.valueOf(successCount),
-                    "{total}", String.valueOf(validPlayerUUIDs.size()));
+        messageUtils.sendMessage(sender, "batch-completed", java.util.Map.of(
+            "success", String.valueOf(successCount),
+            "total", String.valueOf(validPlayerUUIDs.size())
+        ));
                 
                 plugin.getAuditManager().logBatchOperation("batch " + operation, getExecutorName(sender), 
                     validPlayerUUIDs.size(), successCount);
@@ -228,7 +232,7 @@ public class LowOPCommand implements CommandExecutor {
         UUID playerUUID = validationUtils.getPlayerUUID(playerName);
         
         if (playerUUID == null) {
-            messageUtils.sendMessage(sender, "player-not-found", "{player}", playerName);
+            messageUtils.sendMessage(sender, "player-not-found", java.util.Map.of("player", playerName));
             return true;
         }
 
@@ -258,15 +262,15 @@ public class LowOPCommand implements CommandExecutor {
         }
 
         // Execute permission change
-        messageUtils.sendMessage(sender, "processing-request", "{player}", playerName);
+        messageUtils.sendMessage(sender, "processing-request", java.util.Map.of("player", playerName));
         
         plugin.getPermissionManager().setPlayerPermissions(playerUUID, enableAdmin, sender)
             .thenAccept(success -> {
                 if (success) {
                     String messageKey = enableAdmin ? "admin-enabled-executor" : "admin-disabled-executor";
-                    messageUtils.sendMessage(sender, messageKey, "{player}", playerName);
+                    messageUtils.sendMessage(sender, messageKey, java.util.Map.of("player", playerName));
                 } else {
-                    messageUtils.sendMessage(sender, "operation-failed", "{player}", playerName);
+                    messageUtils.sendMessage(sender, "operation-failed", java.util.Map.of("player", playerName));
                 }
             });
 

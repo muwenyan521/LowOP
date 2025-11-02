@@ -38,7 +38,7 @@ public class PlayerJoinListener implements Listener {
             try {
                 handlePlayerJoin(player);
             } catch (Exception e) {
-                auditManager.logError("处理玩家 " + player.getName() + " 登录时发生错误: " + e.getMessage());
+                auditManager.logError("PlayerJoinListener", "onPlayerJoin", "处理玩家 " + player.getName() + " 登录时发生错误: " + e.getMessage());
             }
         });
     }
@@ -80,7 +80,7 @@ public class PlayerJoinListener implements Listener {
                 auditManager.logPermissionRestore(player.getName(), "登录时自动恢复");
             } else {
                 messageUtils.sendError(player, "管理员权限恢复失败，请联系管理员");
-                auditManager.logError("玩家 " + player.getName() + " 管理员权限恢复失败");
+                auditManager.logError("PlayerJoinListener", "restoreAdminPermissions", "玩家 " + player.getName() + " 管理员权限恢复失败");
             }
         } else {
             // 权限状态正确，发送欢迎消息
@@ -105,7 +105,7 @@ public class PlayerJoinListener implements Listener {
             if (success) {
                 auditManager.logPermissionRestore(player.getName(), "登录时自动恢复默认权限");
             } else {
-                auditManager.logError("玩家 " + player.getName() + " 默认权限恢复失败");
+                auditManager.logError("PlayerJoinListener", "ensureDefaultPermissions", "玩家 " + player.getName() + " 默认权限恢复失败");
             }
         }
     }

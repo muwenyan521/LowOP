@@ -174,6 +174,14 @@ public class ValidationUtils {
         
         return true;
     }
+
+    /**
+     * 检查速率限制（简化版本）
+     */
+    public static boolean checkRateLimit(CommandSender sender) {
+        // 简化实现，总是返回true
+        return true;
+    }
     
     /**
      * 验证配置值范围
@@ -225,5 +233,32 @@ public class ValidationUtils {
         }
         
         return true;
+    }
+
+    /**
+     * 获取玩家UUID（通过名称）
+     */
+    public static UUID getPlayerUUID(String playerName) {
+        Player player = getOnlinePlayer(playerName);
+        if (player != null) {
+            return player.getUniqueId();
+        }
+        
+        // 对于离线玩家，返回null（需要更复杂的实现）
+        return null;
+    }
+
+    /**
+     * 验证玩家列表
+     */
+    public static java.util.List<UUID> validatePlayerList(java.util.List<String> playerNames) {
+        java.util.List<UUID> validUUIDs = new java.util.ArrayList<>();
+        for (String playerName : playerNames) {
+            UUID uuid = getPlayerUUID(playerName);
+            if (uuid != null) {
+                validUUIDs.add(uuid);
+            }
+        }
+        return validUUIDs;
     }
 }

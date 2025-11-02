@@ -6,6 +6,7 @@ import wangxianming.lowop.LowOP;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -125,5 +126,20 @@ public class ConfigManager {
 
     public FileConfiguration getMessages() {
         return messages;
+    }
+
+    // Add missing method
+    public List<String> getHelpMessage() {
+        return getMessageList("messages.help", Arrays.asList(
+            "§6=== LowOP Help ===",
+            "§e/lowop <player> [on|off|status] §7- 管理玩家权限",
+            "§e/lowop batch <on|off> <player1,player2,...> §7- 批量操作",
+            "§e/lowop status [player] §7- 查看权限状态",
+            "§e/lowop reload §7- 重载配置",
+            "§e/lowop health §7- 系统健康检查",
+            "§e/lowop audit [page] §7- 查看审计日志",
+            "§e/lowop version §7- 版本信息",
+            "§e/lowop help §7- 显示此帮助"
+        ));
     }
 }

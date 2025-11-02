@@ -118,8 +118,8 @@ public class MessageUtils {
      * 获取格式化后的消息
      */
     private String getMessage(String key, Map<String, String> placeholders) {
-        String message = configManager.getMessage(key);
-        if (message == null) {
+        String message = configManager.getMessage(key, "&c消息键 '" + key + "' 未找到");
+        if (message == null || message.isEmpty()) {
             return "&c消息键 '" + key + "' 未找到";
         }
         

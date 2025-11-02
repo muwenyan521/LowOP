@@ -98,6 +98,51 @@ public class AuditManager {
         addLogEntry(logEntry);
     }
 
+    public void logPlayerJoin(String playerName, UUID playerUUID, boolean hasAdminState) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s joined (Admin State: %s)",
+            timestamp, playerName, hasAdminState ? "ADMIN" : "DEFAULT");
+        
+        addLogEntry(logEntry);
+    }
+
+    public void logPermissionFix(String playerName, String reason) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] Permission fix for %s: %s",
+            timestamp, playerName, reason);
+        
+        addLogEntry(logEntry);
+    }
+
+    public void logPermissionRestore(String playerName, String context) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] Permission restored for %s: %s",
+            timestamp, playerName, context);
+        
+        addLogEntry(logEntry);
+    }
+
+    public void logPlayerQuit(String playerName, UUID playerUUID, boolean hasAdminState) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s quit (Admin State: %s)",
+            timestamp, playerName, hasAdminState ? "ADMIN" : "DEFAULT");
+        
+        addLogEntry(logEntry);
+    }
+
+    public void logPlayerKick(String playerName, UUID playerUUID, boolean hasAdminState, String reason) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s was kicked (Admin State: %s, Reason: %s)",
+            timestamp, playerName, hasAdminState ? "ADMIN" : "DEFAULT", reason);
+        
+        addLogEntry(logEntry);
+    }
+
     private void addLogEntry(String logEntry) {
         auditLog.add(logEntry);
         
