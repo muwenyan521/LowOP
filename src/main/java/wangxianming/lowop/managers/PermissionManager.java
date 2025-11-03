@@ -261,9 +261,53 @@ public class PermissionManager {
             return player.getName();
         }
         
-        // Try to get from offline player (this might not work for all cases)
-        // For production, you might want to implement a more robust solution
-        return Bukkit.getOfflinePlayer(playerUUID).getName();
+        // Get from offline player
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
+        if (offlinePlayer.hasPlayedBefore()) {
+            return offlinePlayer.getName();
+        }
+        
+        return null;
+    }
+
+    /**
+     * 获取玩家名称（支持离线玩家）
+     */
+    public String getPlayerNameWithOfflineSupport(UUID playerUUID) {
+        return getPlayerName(playerUUID);
+    }
+
+    /**
+     * 检查玩家是否存在（支持离线玩家）
+     */
+    public boolean playerExists(String playerName) {
+        // Check online players first
+        if (Bukkit.getPlayerExact(playerName) != null) {
+            return true;
+        }
+        
+        // Check offline players
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerName);
+        return offlinePlayer.hasPlayedBefore();
+    }
+
+    /**
+     * 获取玩家UUID（支持离线玩家）
+     */
+    public UUID getPlayerUUID(String playerName) {
+        // Check online players first
+        Player player = Bukkit.getPlayerExact(playerName);
+        if (player != null) {
+            return player.getUniqueId();
+        }
+        
+        // Check offline players
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerName);
+        if (offlinePlayer.hasPlayedBefore()) {
+            return offlinePlayer.getUniqueId();
+        }
+        
+        return null;
     }
 
     private void sendPlayerMessage(UUID playerUUID, boolean enableAdmin) {
@@ -340,15 +384,14 @@ public class PermissionManager {
         }
     }
 
-    // Check permission state for a player
+    // Check permission state for a player (支持离线玩家)
     public boolean checkPermissionState(String playerName, boolean expectedAdminState) {
         try {
-            Player player = Bukkit.getPlayer(playerName);
-            if (player == null) {
+            UUID playerUUID = getPlayerUUID(playerName);
+            if (playerUUID == null) {
                 return false;
             }
             
-            UUID playerUUID = player.getUniqueId();
             boolean actualState = plugin.getStateManager().hasAdminState(playerUUID);
             
             return actualState == expectedAdminState;
@@ -358,15 +401,14 @@ public class PermissionManager {
         }
     }
 
-    // Check if player has correct permission level state
+    // Check if player has correct permission level state (支持离线玩家)
     public boolean checkPermissionLevelState(String playerName, PermissionLevel expectedLevel) {
         try {
-            Player player = Bukkit.getPlayer(playerName);
-            if (player == null) {
+            UUID playerUUID = getPlayerUUID(playerName);
+            if (playerUUID == null) {
                 return false;
             }
             
-            UUID playerUUID = player.getUniqueId();
             PermissionLevel actualLevel = plugin.getStateManager().getPlayerPermissionLevel(playerUUID);
             
             return actualLevel == expectedLevel;
@@ -376,40 +418,51 @@ public class PermissionManager {
         }
     }
 
-    // Set admin permissions for a player by name
+    // Set admin permissions for a player by name (支持离线玩家)
     public CompletableFuture<Boolean> setAdminPermissions(String playerName) {
-        Player player = Bukkit.getPlayer(playerName);
-        if (player == null) {
+        UUID playerUUID = getPlayerUUID(playerName);
+        if (playerUUID == null) {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
             future.complete(false);
             return future;
         }
-        return setPlayerPermissions(player.getUniqueId(), true, Bukkit.getConsoleSender());
+        return setPlayerPermissions(playerUUID, true, Bukkit.getConsoleSender());
     }
 
-    // Set default permissions for a player by name
+    // Set default permissions for a player by name (支持离线玩家)
     public CompletableFuture<Boolean> setDefaultPermissions(String playerName) {
-        Player player = Bukkit.getPlayer(playerName);
-        if (player == null) {
+        UUID playerUUID = getPlayerUUID(playerName);
+        if (playerUUID == null) {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
             future.complete(false);
             return future;
         }
-        return setPlayerPermissions(player.getUniqueId(), false, Bukkit.getConsoleSender());
+        return setPlayerPermissions(playerUUID, false, Bukkit.getConsoleSender());
     }
 
-    // Set player permissions by player name (overloaded version)
+    // Set player permissions by player name (overloaded version, 支持离线玩家)
     public CompletableFuture<Boolean> setPlayerPermissions(String playerName, boolean enableAdmin) {
-        Player player = Bukkit.getPlayer(playerName);
-        if (player == null) {
+        UUID playerUUID = getPlayerUUID(playerName);
+        if (playerUUID == null) {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
             future.complete(false);
             return future;
         }
-        return setPlayerPermissions(player.getUniqueId(), enableAdmin, Bukkit.getConsoleSender());
+        return setPlayerPermissions(playerUUID, enableAdmin, Bukkit.getConsoleSender());
     }
 
-    // Set multiple players permissions by player names (overloaded version)
+    // Set player permission level by player name (支持离线玩家)
+    public CompletableFuture<Boolean> setPlayerPermissionLevel(String playerName, PermissionLevel level, CommandSender executor) {
+        UUID playerUUID = getPlayerUUID(playerName);
+        if (playerUUID == null) {
+            CompletableFuture<Boolean> future = new CompletableFuture<>();
+            future.complete(false);
+            return future;
+        }
+        return setPlayerPermissionLevel(playerUUID, level, executor);
+    }
+
+    // Set multiple players permissions by player names (支持离线玩家)
     public CompletableFuture<Integer> setMultiplePlayersPermissions(java.util.List<String> playerNames, boolean enableAdmin) {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         
@@ -420,9 +473,9 @@ public class PermissionManager {
 
         java.util.List<UUID> playerUUIDs = new java.util.ArrayList<>();
         for (String playerName : playerNames) {
-            Player player = Bukkit.getPlayer(playerName);
-            if (player != null) {
-                playerUUIDs.add(player.getUniqueId());
+            UUID playerUUID = getPlayerUUID(playerName);
+            if (playerUUID != null) {
+                playerUUIDs.add(playerUUID);
             }
         }
 
@@ -432,6 +485,47 @@ public class PermissionManager {
         }
 
         return setMultiplePlayersPermissions(playerUUIDs, enableAdmin, Bukkit.getConsoleSender());
+    }
+
+    // Set multiple players permission levels by player names (支持离线玩家)
+    public CompletableFuture<Integer> setMultiplePlayersPermissionLevels(java.util.List<String> playerNames, PermissionLevel level, CommandSender executor) {
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        
+        if (playerNames.isEmpty()) {
+            future.complete(0);
+            return future;
+        }
+
+        java.util.List<UUID> playerUUIDs = new java.util.ArrayList<>();
+        for (String playerName : playerNames) {
+            UUID playerUUID = getPlayerUUID(playerName);
+            if (playerUUID != null) {
+                playerUUIDs.add(playerUUID);
+            }
+        }
+
+        if (playerUUIDs.isEmpty()) {
+            future.complete(0);
+            return future;
+        }
+
+        return setMultiplePlayersPermissionLevels(playerUUIDs, level, executor);
+    }
+
+    // Batch operations for permission levels
+    public CompletableFuture<Integer> setMultiplePlayersPermissionLevels(java.util.List<UUID> playerUUIDs, 
+                                                                        PermissionLevel level, CommandSender executor) {
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+        
+        if (playerUUIDs.isEmpty()) {
+            future.complete(0);
+            return future;
+        }
+
+        // Process players sequentially to avoid overwhelming the server
+        processPlayersSequentiallyForLevels(playerUUIDs, level, executor, future, 0, 0);
+        
+        return future;
     }
 
     // Batch operations
@@ -465,6 +559,25 @@ public class PermissionManager {
             // Process next player after a short delay to avoid overwhelming the server
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 processPlayersSequentially(playerUUIDs, enableAdmin, executor, future, index + 1, newSuccessCount);
+            }, 2L); // 2 tick delay between operations
+        });
+    }
+
+    private void processPlayersSequentiallyForLevels(java.util.List<UUID> playerUUIDs, PermissionLevel level, 
+                                                   CommandSender executor, CompletableFuture<Integer> future, 
+                                                   int index, int successCount) {
+        if (index >= playerUUIDs.size()) {
+            future.complete(successCount);
+            return;
+        }
+
+        UUID playerUUID = playerUUIDs.get(index);
+        setPlayerPermissionLevel(playerUUID, level, executor).thenAccept(success -> {
+            int newSuccessCount = success ? successCount + 1 : successCount;
+            
+            // Process next player after a short delay to avoid overwhelming the server
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                processPlayersSequentiallyForLevels(playerUUIDs, level, executor, future, index + 1, newSuccessCount);
             }, 2L); // 2 tick delay between operations
         });
     }

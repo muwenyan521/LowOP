@@ -8,6 +8,7 @@ import wangxianming.lowop.LowOP;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class StateManager {
@@ -122,6 +123,25 @@ public class StateManager {
         }
         saveStates();
         return count;
+    }
+
+    // Async methods for offline player support
+    public CompletableFuture<Boolean> setPlayerPermissionLevelAsync(UUID playerUUID, PermissionManager.PermissionLevel level, String executor) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                setPlayerPermissionLevel(playerUUID, level, executor);
+                return true;
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to set permission level for player " + playerUUID + ": " + e.getMessage());
+                return false;
+            }
+        });
+    }
+
+    public CompletableFuture<Integer> setMultiplePlayersPermissionLevelAsync(List<UUID> playerUUIDs, PermissionManager.PermissionLevel level, String executor) {
+        return CompletableFuture.supplyAsync(() -> {
+            return setMultiplePlayersPermissionLevel(playerUUIDs, level, executor);
+        });
     }
 
     public Map<UUID, PermissionManager.PermissionLevel> getAllPlayerStates() {

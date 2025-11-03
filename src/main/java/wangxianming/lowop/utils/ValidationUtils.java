@@ -236,7 +236,7 @@ public class ValidationUtils {
     }
 
     /**
-     * 获取玩家UUID（通过名称）
+     * 获取玩家UUID（通过名称），支持离线玩家
      */
     public static UUID getPlayerUUID(String playerName) {
         Player player = getOnlinePlayer(playerName);
@@ -244,7 +244,12 @@ public class ValidationUtils {
             return player.getUniqueId();
         }
         
-        // 对于离线玩家，返回null（需要更复杂的实现）
+        // 支持离线玩家
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerName);
+        if (offlinePlayer.hasPlayedBefore()) {
+            return offlinePlayer.getUniqueId();
+        }
+        
         return null;
     }
 
@@ -263,7 +268,7 @@ public class ValidationUtils {
     }
 
     /**
-     * 解析玩家选择符 (@a, @p, @s)
+     * 解析玩家选择符 (@a, @p, @s)，支持离线玩家
      */
     public static List<UUID> parsePlayerSelector(String selector, CommandSender sender) {
         List<UUID> playerUUIDs = new ArrayList<>();
@@ -293,7 +298,7 @@ public class ValidationUtils {
                 }
                 break;
             default:
-                // 普通玩家名称
+                // 普通玩家名称 - 支持离线玩家
                 UUID uuid = getPlayerUUID(selector);
                 if (uuid != null) {
                     playerUUIDs.add(uuid);
@@ -331,22 +336,23 @@ public class ValidationUtils {
         return true;
     }
 
+
     /**
-     * 解析权限级别字符串为枚举
+     * 验证玩家名称并获取玩家UUID（支持离线玩家）
      */
-    public static wangxianming.lowop.managers.PermissionManager.PermissionLevel parsePermissionLevel(String level) {
-        if (level == null) {
-            return wangxianming.lowop.managers.PermissionManager.PermissionLevel.PLAYER;
+    public static UUID validateAndGetPlayerUUID(String playerName, CommandSender sender, MessageUtils messageUtils) {
+        if (!isValidUsername(playerName)) {
+            messageUtils.sendError(sender, "无效的玩家名称: " + playerName);
+            return null;
         }
         
-        switch (level.toLowerCase()) {
-            case "lowop":
-                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.LOWOP;
-            case "op":
-                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.OP;
-            default:
-                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.PLAYER;
+        UUID uuid = getPlayerUUID(playerName);
+        if (uuid == null) {
+            messageUtils.sendError(sender, "玩家 " + playerName + " 不存在或从未登录过服务器");
+            return null;
         }
+        
+        return uuid;
     }
 
     /**

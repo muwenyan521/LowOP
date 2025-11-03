@@ -312,7 +312,7 @@ public class LowOPCommand implements CommandExecutor {
             String playerName = getPlayerName(playerUUID);
             PermissionManager.PermissionLevel currentLevel = plugin.getStateManager().getPlayerPermissionLevel(playerUUID);
             
-            plugin.getStateManager().setPlayerPermissionLevel(playerUUID, targetLevel, getExecutorName(sender))
+            plugin.getStateManager().setPlayerPermissionLevelAsync(playerUUID, targetLevel, getExecutorName(sender))
                 .thenAccept(success -> {
                     if (success) {
                         String messageKey = getPermissionChangeMessageKey(currentLevel, targetLevel);
@@ -359,7 +359,17 @@ public class LowOPCommand implements CommandExecutor {
 
     private String getPlayerName(UUID playerUUID) {
         Player player = Bukkit.getPlayer(playerUUID);
-        return player != null ? player.getName() : "未知玩家";
+        if (player != null) {
+            return player.getName();
+        }
+        
+        // 支持离线玩家
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
+        if (offlinePlayer.hasPlayedBefore()) {
+            return offlinePlayer.getName();
+        }
+        
+        return "未知玩家";
     }
 
     private String getExecutorName(CommandSender sender) {

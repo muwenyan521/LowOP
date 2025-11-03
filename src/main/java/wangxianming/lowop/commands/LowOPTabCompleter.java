@@ -35,7 +35,7 @@ public class LowOPTabCompleter implements TabCompleter {
             case 1:
                 // 第一参数：子命令或玩家名
                 completions.addAll(getSubCommands(sender));
-                completions.addAll(getOnlinePlayerNames());
+                completions.addAll(getAllPlayerNames());
                 break;
                 
             case 2:
@@ -97,6 +97,28 @@ public class LowOPTabCompleter implements TabCompleter {
     }
     
     /**
+     * 获取所有玩家名称列表（包括离线玩家）
+     */
+    private List<String> getAllPlayerNames() {
+        List<String> playerNames = new ArrayList<>();
+        
+        // 添加在线玩家
+        playerNames.addAll(getOnlinePlayerNames());
+        
+        // 添加离线玩家（曾经登录过的玩家）
+        for (org.bukkit.OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) {
+            if (offlinePlayer.hasPlayedBefore() && offlinePlayer.getName() != null) {
+                String name = offlinePlayer.getName();
+                if (!playerNames.contains(name)) {
+                    playerNames.add(name);
+                }
+            }
+        }
+        
+        return playerNames;
+    }
+    
+    /**
      * 检查是否为子命令
      */
     private boolean isSubCommand(String arg) {
@@ -127,7 +149,7 @@ public class LowOPTabCompleter implements TabCompleter {
                 break;
                 
             case "status":
-                completions.addAll(getOnlinePlayerNames());
+                completions.addAll(getAllPlayerNames());
                 break;
                 
             default:
