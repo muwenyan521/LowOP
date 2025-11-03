@@ -10,11 +10,155 @@ import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class PermissionManager {
+    
+    public enum PermissionLevel {
+        PLAYER,
+        LOWOP,
+        OP
+    }
 
     private final LowOP plugin;
 
     public PermissionManager(LowOP plugin) {
         this.plugin = plugin;
+    }
+
+    // New methods for three-level permission system
+    public CompletableFuture<Boolean> setPlayerPermissionLevel(UUID playerUUID, PermissionLevel level, CommandSender executor) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        
+        String playerName = getPlayerName(playerUUID);
+        if (playerName == null) {
+            future.complete(false);
+            return future;
+        }
+
+        // Run permission changes asynchronously to avoid blocking the main thread
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                boolean success = executePermissionCommands(playerName, level, executor);
+                
+                // Switch back to main thread for completion
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    future.complete(success);
+                    
+                    if (success) {
+                        // Update state in main thread
+                        plugin.getStateManager().setPlayerPermissionLevel(playerUUID, level, 
+                            executor instanceof Player ? ((Player) executor).getName() : "CONSOLE");
+                        
+                        // Send message to player if online
+                        sendPlayerLevelMessage(playerUUID, level);
+                        
+                        // Log successful operation
+                        plugin.getLogger().info("Successfully set " + playerName + " to " + level + " permissions");
+                    } else {
+                        plugin.getLogger().warning("Failed to set " + playerName + " to " + level + " permissions");
+                    }
+                });
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Error executing permission commands for " + playerName, e);
+                Bukkit.getScheduler().runTask(plugin, () -> future.complete(false));
+            }
+        });
+
+        return future;
+    }
+
+    private boolean executePermissionCommands(String playerName, PermissionLevel level, CommandSender executor) {
+        try {
+            // Clear existing permissions first
+            String clearCommand = "lp user " + playerName + " parent clear";
+            if (!dispatchCommand(clearCommand, executor)) {
+                plugin.getLogger().warning("Failed to clear permissions for " + playerName);
+                return false;
+            }
+
+            // Add the appropriate group based on level
+            String groupToAdd = getGroupForLevel(level);
+            String addCommand = "lp user " + playerName + " parent add " + groupToAdd;
+            if (!dispatchCommand(addCommand, executor)) {
+                plugin.getLogger().warning("Failed to add group " + groupToAdd + " for " + playerName);
+                return false;
+            }
+
+            // Apply changes
+            String applyCommand = "lp applyedits";
+            if (!dispatchCommand(applyCommand, executor)) {
+                plugin.getLogger().warning("Failed to apply permission edits for " + playerName);
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Exception while executing permission commands for " + playerName, e);
+            return false;
+        }
+    }
+
+    private String getGroupForLevel(PermissionLevel level) {
+        switch (level) {
+            case OP:
+                return plugin.getConfigManager().getOPGroup();
+            case LOWOP:
+                return plugin.getConfigManager().getLowOPGroup();
+            case PLAYER:
+            default:
+                return plugin.getConfigManager().getPlayerGroup();
+        }
+    }
+
+    // Detect player's permission level from LuckPerms
+    public CompletableFuture<PermissionLevel> detectPlayerPermissionLevel(String playerName) {
+        CompletableFuture<PermissionLevel> future = new CompletableFuture<>();
+        
+        if (!isLuckPermsAvailable()) {
+            future.complete(PermissionLevel.PLAYER);
+            return future;
+        }
+
+        // Run detection asynchronously
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                PermissionLevel level = executePermissionDetection(playerName);
+                
+                // Switch back to main thread for completion
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    future.complete(level);
+                });
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.WARNING, "Error detecting permission level for " + playerName, e);
+                Bukkit.getScheduler().runTask(plugin, () -> future.complete(PermissionLevel.PLAYER));
+            }
+        });
+
+        return future;
+    }
+
+    private PermissionLevel executePermissionDetection(String playerName) {
+        try {
+            // Check if player is in OP group
+            String checkOPCommand = "lp user " + playerName + " parent check " + plugin.getConfigManager().getOPGroup();
+            boolean isOP = dispatchCommand(checkOPCommand, Bukkit.getConsoleSender());
+            
+            if (isOP) {
+                return PermissionLevel.OP;
+            }
+
+            // Check if player is in LOWOP group
+            String checkLowOPCommand = "lp user " + playerName + " parent check " + plugin.getConfigManager().getLowOPGroup();
+            boolean isLowOP = dispatchCommand(checkLowOPCommand, Bukkit.getConsoleSender());
+            
+            if (isLowOP) {
+                return PermissionLevel.LOWOP;
+            }
+
+            // Default to PLAYER
+            return PermissionLevel.PLAYER;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Exception while detecting permission level for " + playerName, e);
+            return PermissionLevel.PLAYER;
+        }
     }
 
     public CompletableFuture<Boolean> setPlayerPermissions(UUID playerUUID, boolean enableAdmin, CommandSender executor) {
@@ -132,6 +276,39 @@ public class PermissionManager {
         }
     }
 
+    private void sendPlayerLevelMessage(UUID playerUUID, PermissionLevel level) {
+        Player player = Bukkit.getPlayer(playerUUID);
+        if (player != null && player.isOnline()) {
+            String messageKey;
+            switch (level) {
+                case OP:
+                    messageKey = "messages.op-status";
+                    break;
+                case LOWOP:
+                    messageKey = "messages.lowop-status";
+                    break;
+                case PLAYER:
+                default:
+                    messageKey = "messages.player-status";
+                    break;
+            }
+            String message = plugin.getConfigManager().getMessage(messageKey, getDefaultLevelMessage(level));
+            player.sendMessage(message);
+        }
+    }
+
+    private String getDefaultLevelMessage(PermissionLevel level) {
+        switch (level) {
+            case OP:
+                return "§6你的权限等级已设置为OP";
+            case LOWOP:
+                return "§e你的权限等级已设置为LOWOP";
+            case PLAYER:
+            default:
+                return "§a你的权限等级已设置为PLAYER";
+        }
+    }
+
     // Utility methods for checking LuckPerms availability
     public boolean isLuckPermsAvailable() {
         return Bukkit.getPluginManager().getPlugin("LuckPerms") != null;
@@ -177,6 +354,24 @@ public class PermissionManager {
             return actualState == expectedAdminState;
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Error checking permission state for " + playerName, e);
+            return false;
+        }
+    }
+
+    // Check if player has correct permission level state
+    public boolean checkPermissionLevelState(String playerName, PermissionLevel expectedLevel) {
+        try {
+            Player player = Bukkit.getPlayer(playerName);
+            if (player == null) {
+                return false;
+            }
+            
+            UUID playerUUID = player.getUniqueId();
+            PermissionLevel actualLevel = plugin.getStateManager().getPlayerPermissionLevel(playerUUID);
+            
+            return actualLevel == expectedLevel;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Error checking permission level state for " + playerName, e);
             return false;
         }
     }

@@ -18,10 +18,10 @@ settings:
 
 # 权限组配置
 permission-groups:
-  # 管理员权限组
-  admin-group: "otherop"
-  # 默认权限组
-  default-group: "default"
+  # 三级权限划分
+  player-group: "default"
+  lowop-group: "otherop"
+  op-group: "op"
   # 是否在设置权限时清除现有权限
   clear-existing: true
 

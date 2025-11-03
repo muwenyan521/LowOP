@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import wangxianming.lowop.LowOP;
+import wangxianming.lowop.managers.PermissionManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,6 +71,29 @@ public class AuditManager {
         }
     }
 
+    public void logPermissionLevelChange(UUID playerUUID, PermissionManager.PermissionLevel fromLevel, PermissionManager.PermissionLevel toLevel, String executor) {
+        String playerName = getPlayerName(playerUUID);
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s changed %s's permission level from %s to %s",
+            timestamp, executor, playerName, fromLevel.name(), toLevel.name());
+        
+        addLogEntry(logEntry);
+        
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().info("Audit: " + logEntry);
+        }
+    }
+
+    public void logBatchPermissionLevelChange(String executor, int total, int success, PermissionManager.PermissionLevel level) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s performed batch permission level change to %s - %d/%d successful",
+            timestamp, executor, level.name(), success, total);
+        
+        addLogEntry(logEntry);
+    }
+
     public void logCommandExecution(String command, String executor, boolean success) {
         String timestamp = dateFormat.format(new Date());
         
@@ -107,6 +131,15 @@ public class AuditManager {
         addLogEntry(logEntry);
     }
 
+    public void logPlayerJoinWithPermissionLevel(String playerName, UUID playerUUID, PermissionManager.PermissionLevel level) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s joined (Permission Level: %s)",
+            timestamp, playerName, level.name());
+        
+        addLogEntry(logEntry);
+    }
+
     public void logPermissionFix(String playerName, String reason) {
         String timestamp = dateFormat.format(new Date());
         
@@ -134,11 +167,29 @@ public class AuditManager {
         addLogEntry(logEntry);
     }
 
+    public void logPlayerQuitWithPermissionLevel(String playerName, UUID playerUUID, PermissionManager.PermissionLevel level) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s quit (Permission Level: %s)",
+            timestamp, playerName, level.name());
+        
+        addLogEntry(logEntry);
+    }
+
     public void logPlayerKick(String playerName, UUID playerUUID, boolean hasAdminState, String reason) {
         String timestamp = dateFormat.format(new Date());
         
         String logEntry = String.format("[%s] %s was kicked (Admin State: %s, Reason: %s)",
             timestamp, playerName, hasAdminState ? "ADMIN" : "DEFAULT", reason);
+        
+        addLogEntry(logEntry);
+    }
+
+    public void logPlayerKickWithPermissionLevel(String playerName, UUID playerUUID, PermissionManager.PermissionLevel level, String reason) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s was kicked (Permission Level: %s, Reason: %s)",
+            timestamp, playerName, level.name(), reason);
         
         addLogEntry(logEntry);
     }

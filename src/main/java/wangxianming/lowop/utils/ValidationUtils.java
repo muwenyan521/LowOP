@@ -4,7 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -258,6 +258,105 @@ public class ValidationUtils {
             if (uuid != null) {
                 validUUIDs.add(uuid);
             }
+        }
+        return validUUIDs;
+    }
+
+    /**
+     * 解析玩家选择符 (@a, @p, @s)
+     */
+    public static List<UUID> parsePlayerSelector(String selector, CommandSender sender) {
+        List<UUID> playerUUIDs = new ArrayList<>();
+        
+        switch (selector.toLowerCase()) {
+            case "@a":
+                // 所有在线玩家
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    playerUUIDs.add(player.getUniqueId());
+                }
+                break;
+            case "@p":
+                // 最近的玩家（如果是玩家执行命令，则返回自己；如果是控制台，则返回最近的玩家）
+                if (sender instanceof Player) {
+                    playerUUIDs.add(((Player) sender).getUniqueId());
+                } else {
+                    Player nearestPlayer = getNearestPlayer();
+                    if (nearestPlayer != null) {
+                        playerUUIDs.add(nearestPlayer.getUniqueId());
+                    }
+                }
+                break;
+            case "@s":
+                // 自己（仅限玩家）
+                if (sender instanceof Player) {
+                    playerUUIDs.add(((Player) sender).getUniqueId());
+                }
+                break;
+            default:
+                // 普通玩家名称
+                UUID uuid = getPlayerUUID(selector);
+                if (uuid != null) {
+                    playerUUIDs.add(uuid);
+                }
+                break;
+        }
+        
+        return playerUUIDs;
+    }
+
+    /**
+     * 获取最近的玩家（用于控制台执行 @p 选择符）
+     */
+    private static Player getNearestPlayer() {
+        Player nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            // 简化实现：返回第一个在线玩家
+            return player;
+        }
+        
+        return null;
+    }
+
+    /**
+     * 验证权限级别参数
+     */
+    public static boolean validatePermissionLevel(String level, CommandSender sender, MessageUtils messageUtils) {
+        if (level != null && !level.equalsIgnoreCase("player") && 
+            !level.equalsIgnoreCase("lowop") && !level.equalsIgnoreCase("op")) {
+            messageUtils.sendError(sender, "权限级别必须是 'player', 'lowop' 或 'op'");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 解析权限级别字符串为枚举
+     */
+    public static wangxianming.lowop.managers.PermissionManager.PermissionLevel parsePermissionLevel(String level) {
+        if (level == null) {
+            return wangxianming.lowop.managers.PermissionManager.PermissionLevel.PLAYER;
+        }
+        
+        switch (level.toLowerCase()) {
+            case "lowop":
+                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.LOWOP;
+            case "op":
+                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.OP;
+            default:
+                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.PLAYER;
+        }
+    }
+
+    /**
+     * 验证玩家列表（支持选择符）
+     */
+    public static List<UUID> validatePlayerListWithSelectors(List<String> playerSelectors, CommandSender sender) {
+        List<UUID> validUUIDs = new ArrayList<>();
+        for (String selector : playerSelectors) {
+            List<UUID> uuids = parsePlayerSelector(selector, sender);
+            validUUIDs.addAll(uuids);
         }
         return validUUIDs;
     }

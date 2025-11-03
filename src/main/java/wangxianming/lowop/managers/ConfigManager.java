@@ -82,12 +82,16 @@ public class ConfigManager {
     }
 
     // Getters for config values
-    public String getAdminGroup() {
-        return config.getString("permission-groups.admin", "otherop");
+    public String getPlayerGroup() {
+        return config.getString("permission-groups.player-group", "default");
     }
 
-    public String getDefaultGroup() {
-        return config.getString("permission-groups.default", "default");
+    public String getLowOPGroup() {
+        return config.getString("permission-groups.lowop-group", "otherop");
+    }
+
+    public String getOPGroup() {
+        return config.getString("permission-groups.op-group", "op");
     }
 
     public boolean isAuditLogEnabled() {

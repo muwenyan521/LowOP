@@ -6,12 +6,11 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import wangxianming.lowop.LowOP;
+import wangxianming.lowop.managers.PermissionManager;
 import wangxianming.lowop.utils.MessageUtils;
 import wangxianming.lowop.utils.ValidationUtils;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class LowOPCommand implements CommandExecutor {
@@ -56,8 +55,10 @@ public class LowOPCommand implements CommandExecutor {
                 return handleBatch(sender, args);
             case "version":
                 return handleVersion(sender);
+            case "detect":
+                return handleDetect(sender, args);
             default:
-                // Assume it's a player name for permission management
+                // Assume it's a player selector for permission management
                 return handlePlayerPermission(sender, args);
         }
     }
@@ -65,14 +66,16 @@ public class LowOPCommand implements CommandExecutor {
     private boolean handleHelp(CommandSender sender) {
         List<String> helpMessages = plugin.getConfigManager().getMessageList("messages.help", Arrays.asList(
             "§6=== LowOP Help ===",
-            "§e/lowop <player> [on|off|status] §7- 管理玩家权限",
-            "§e/lowop batch <on|off> <player1,player2,...> §7- 批量操作",
+            "§e/lowop <player> [player|lowop|op|status] §7- 管理玩家权限级别",
+            "§e/lowop batch <player|lowop|op> <player1,player2,...> §7- 批量设置权限级别",
             "§e/lowop status [player] §7- 查看权限状态",
+            "§e/lowop detect <player> §7- 检测玩家权限级别",
             "§e/lowop reload §7- 重载配置",
             "§e/lowop health §7- 系统健康检查",
             "§e/lowop audit [page] §7- 查看审计日志",
             "§e/lowop version §7- 版本信息",
-            "§e/lowop help §7- 显示此帮助"
+            "§e/lowop help §7- 显示此帮助",
+            "§7玩家选择符: §e@a §7(所有玩家), §e@p §7(最近玩家), §e@s §7(自己)"
         ));
         
         for (String message : helpMessages) {
@@ -98,33 +101,38 @@ public class LowOPCommand implements CommandExecutor {
         if (args.length == 1) {
             // Show overall status
             int totalPlayers = plugin.getStateManager().getTotalPlayers();
-            int adminCount = plugin.getStateManager().getAdminCount();
+            int playerCount = plugin.getStateManager().getPlayerCount();
+            int lowopCount = plugin.getStateManager().getLowOPCount();
+            int opCount = plugin.getStateManager().getOPCount();
             
-            messageUtils.sendMessage(sender, "status-overall", java.util.Map.of(
+            messageUtils.sendMessage(sender, "status-overall", Map.of(
                 "total", String.valueOf(totalPlayers),
-                "admins", String.valueOf(adminCount)
+                "players", String.valueOf(playerCount),
+                "lowops", String.valueOf(lowopCount),
+                "ops", String.valueOf(opCount)
             ));
             return true;
         }
 
         // Show specific player status
-        String playerName = args[1];
-        UUID playerUUID = validationUtils.getPlayerUUID(playerName);
+        String playerSelector = args[1];
+        List<UUID> playerUUIDs = validationUtils.parsePlayerSelector(playerSelector, sender);
         
-        if (playerUUID == null) {
-            messageUtils.sendMessage(sender, "player-not-found", java.util.Map.of("player", playerName));
+        if (playerUUIDs.isEmpty()) {
+            messageUtils.sendMessage(sender, "player-not-found", Map.of("player", playerSelector));
             return true;
         }
 
-        boolean isAdmin = plugin.getStateManager().getPlayerAdminState(playerUUID);
-        String status = isAdmin ? 
-            plugin.getConfigManager().getMessage("messages.admin-status", "§a管理员") :
-            plugin.getConfigManager().getMessage("messages.default-status", "§7普通玩家");
-        
-        messageUtils.sendMessage(sender, "status-player", java.util.Map.of(
-            "player", playerName,
-            "status", status
-        ));
+        for (UUID playerUUID : playerUUIDs) {
+            String playerName = getPlayerName(playerUUID);
+            PermissionManager.PermissionLevel level = plugin.getStateManager().getPlayerPermissionLevel(playerUUID);
+            String status = getPermissionLevelDisplay(level);
+            
+            messageUtils.sendMessage(sender, "status-player", Map.of(
+                "player", playerName,
+                "status", status
+            ));
+        }
         return true;
     }
 
@@ -173,43 +181,42 @@ public class LowOPCommand implements CommandExecutor {
             return true;
         }
 
-        String operation = args[1].toLowerCase();
-        if (!operation.equals("on") && !operation.equals("off")) {
-            messageUtils.sendMessage(sender, "invalid-operation");
+        String levelStr = args[1].toLowerCase();
+        if (!validationUtils.validatePermissionLevel(levelStr, sender, messageUtils)) {
             return true;
         }
 
-        boolean enableAdmin = operation.equals("on");
+        PermissionManager.PermissionLevel level = validationUtils.parsePermissionLevel(levelStr);
         String playerList = args[2];
-        String[] playerNames = playerList.split(",");
+        String[] playerSelectors = playerList.split(",");
 
-        if (playerNames.length > 10) {
+        if (playerSelectors.length > 10) {
             messageUtils.sendMessage(sender, "batch-too-many-players");
             return true;
         }
 
         // Validate all players first
-        List<UUID> validPlayerUUIDs = validationUtils.validatePlayerList(Arrays.asList(playerNames));
+        List<UUID> validPlayerUUIDs = validationUtils.validatePlayerListWithSelectors(Arrays.asList(playerSelectors), sender);
         if (validPlayerUUIDs.isEmpty()) {
             messageUtils.sendMessage(sender, "no-valid-players");
             return true;
         }
 
-        messageUtils.sendMessage(sender, "batch-processing", java.util.Map.of(
+        messageUtils.sendMessage(sender, "batch-processing", Map.of(
             "count", String.valueOf(validPlayerUUIDs.size()),
-            "operation", enableAdmin ? "启用" : "禁用"
+            "operation", getPermissionLevelDisplay(level)
         ));
 
         // Process batch operation
-        plugin.getPermissionManager().setMultiplePlayersPermissions(validPlayerUUIDs, enableAdmin, sender)
+        plugin.getStateManager().setMultiplePlayersPermissionLevel(validPlayerUUIDs, level, getExecutorName(sender))
             .thenAccept(successCount -> {
-        messageUtils.sendMessage(sender, "batch-completed", java.util.Map.of(
-            "success", String.valueOf(successCount),
-            "total", String.valueOf(validPlayerUUIDs.size())
-        ));
+                messageUtils.sendMessage(sender, "batch-completed", Map.of(
+                    "success", String.valueOf(successCount),
+                    "total", String.valueOf(validPlayerUUIDs.size())
+                ));
                 
-                plugin.getAuditManager().logBatchOperation("batch " + operation, getExecutorName(sender), 
-                    validPlayerUUIDs.size(), successCount);
+                plugin.getAuditManager().logBatchPermissionLevelChange(getExecutorName(sender), 
+                    validPlayerUUIDs.size(), successCount, level);
             });
 
         return true;
@@ -227,32 +234,69 @@ public class LowOPCommand implements CommandExecutor {
         return true;
     }
 
-    private boolean handlePlayerPermission(CommandSender sender, String[] args) {
-        String playerName = args[0];
-        UUID playerUUID = validationUtils.getPlayerUUID(playerName);
-        
-        if (playerUUID == null) {
-            messageUtils.sendMessage(sender, "player-not-found", java.util.Map.of("player", playerName));
+    private boolean handleDetect(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            messageUtils.sendMessage(sender, "detect-usage");
             return true;
         }
 
-        boolean enableAdmin;
+        String playerSelector = args[1];
+        List<UUID> playerUUIDs = validationUtils.parsePlayerSelector(playerSelector, sender);
+        
+        if (playerUUIDs.isEmpty()) {
+            messageUtils.sendMessage(sender, "player-not-found", Map.of("player", playerSelector));
+            return true;
+        }
+
+        messageUtils.sendMessage(sender, "detect-processing", Map.of("player", playerSelector));
+
+        for (UUID playerUUID : playerUUIDs) {
+            String playerName = getPlayerName(playerUUID);
+            
+            plugin.getPermissionManager().detectPlayerPermissionLevel(playerName)
+                .thenAccept(level -> {
+                    String detectedLevel = getPermissionLevelDisplay(level);
+                    messageUtils.sendMessage(sender, "detect-result", Map.of(
+                        "player", playerName,
+                        "level", detectedLevel
+                    ));
+                    
+                    plugin.getAuditManager().logPermissionDetection(getExecutorName(sender), playerName, level);
+                });
+        }
+
+        return true;
+    }
+
+    private boolean handlePlayerPermission(CommandSender sender, String[] args) {
+        String playerSelector = args[0];
+        List<UUID> playerUUIDs = validationUtils.parsePlayerSelector(playerSelector, sender);
+        
+        if (playerUUIDs.isEmpty()) {
+            messageUtils.sendMessage(sender, "player-not-found", Map.of("player", playerSelector));
+            return true;
+        }
+
+        PermissionManager.PermissionLevel targetLevel;
         if (args.length == 1) {
-            // Toggle mode
-            boolean currentState = plugin.getStateManager().getPlayerAdminState(playerUUID);
-            enableAdmin = !currentState;
+            // Show current status
+            for (UUID playerUUID : playerUUIDs) {
+                String playerName = getPlayerName(playerUUID);
+                PermissionManager.PermissionLevel currentLevel = plugin.getStateManager().getPlayerPermissionLevel(playerUUID);
+                String status = getPermissionLevelDisplay(currentLevel);
+                
+                messageUtils.sendMessage(sender, "status-player", Map.of(
+                    "player", playerName,
+                    "status", status
+                ));
+            }
+            return true;
         } else {
-            String operation = args[1].toLowerCase();
-            if (operation.equals("on")) {
-                enableAdmin = true;
-            } else if (operation.equals("off")) {
-                enableAdmin = false;
-            } else if (operation.equals("status")) {
-                return handleStatus(sender, new String[]{"status", playerName});
-            } else {
-                messageUtils.sendMessage(sender, "invalid-operation");
+            String levelStr = args[1].toLowerCase();
+            if (!validationUtils.validatePermissionLevel(levelStr, sender, messageUtils)) {
                 return true;
             }
+            targetLevel = validationUtils.parsePermissionLevel(levelStr);
         }
 
         // Apply rate limiting
@@ -262,19 +306,60 @@ public class LowOPCommand implements CommandExecutor {
         }
 
         // Execute permission change
-        messageUtils.sendMessage(sender, "processing-request", java.util.Map.of("player", playerName));
+        messageUtils.sendMessage(sender, "processing-request", Map.of("player", playerSelector));
         
-        plugin.getPermissionManager().setPlayerPermissions(playerUUID, enableAdmin, sender)
-            .thenAccept(success -> {
-                if (success) {
-                    String messageKey = enableAdmin ? "admin-enabled-executor" : "admin-disabled-executor";
-                    messageUtils.sendMessage(sender, messageKey, java.util.Map.of("player", playerName));
-                } else {
-                    messageUtils.sendMessage(sender, "operation-failed", java.util.Map.of("player", playerName));
-                }
-            });
+        for (UUID playerUUID : playerUUIDs) {
+            String playerName = getPlayerName(playerUUID);
+            PermissionManager.PermissionLevel currentLevel = plugin.getStateManager().getPlayerPermissionLevel(playerUUID);
+            
+            plugin.getStateManager().setPlayerPermissionLevel(playerUUID, targetLevel, getExecutorName(sender))
+                .thenAccept(success -> {
+                    if (success) {
+                        String messageKey = getPermissionChangeMessageKey(currentLevel, targetLevel);
+                        messageUtils.sendMessage(sender, messageKey, Map.of(
+                            "player", playerName,
+                            "from", getPermissionLevelDisplay(currentLevel),
+                            "to", getPermissionLevelDisplay(targetLevel)
+                        ));
+                    } else {
+                        messageUtils.sendMessage(sender, "operation-failed", Map.of("player", playerName));
+                    }
+                });
+        }
 
         return true;
+    }
+
+    private String getPermissionLevelDisplay(PermissionManager.PermissionLevel level) {
+        switch (level) {
+            case PLAYER:
+                return plugin.getConfigManager().getMessage("messages.player-status", "§7普通玩家");
+            case LOWOP:
+                return plugin.getConfigManager().getMessage("messages.lowop-status", "§e低权限OP");
+            case OP:
+                return plugin.getConfigManager().getMessage("messages.op-status", "§a管理员");
+            default:
+                return "§7未知";
+        }
+    }
+
+    private String getPermissionChangeMessageKey(PermissionManager.PermissionLevel from, PermissionManager.PermissionLevel to) {
+        if (from == to) {
+            return "permission-unchanged";
+        }
+        
+        if (to == PermissionManager.PermissionLevel.OP) {
+            return "permission-to-op";
+        } else if (to == PermissionManager.PermissionLevel.LOWOP) {
+            return "permission-to-lowop";
+        } else {
+            return "permission-to-player";
+        }
+    }
+
+    private String getPlayerName(UUID playerUUID) {
+        Player player = Bukkit.getPlayer(playerUUID);
+        return player != null ? player.getName() : "未知玩家";
     }
 
     private String getExecutorName(CommandSender sender) {

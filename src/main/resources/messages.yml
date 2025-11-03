@@ -13,17 +13,32 @@ help-message:
   - "&7/lop batch <add/remove/list/clear> [玩家名] &7- 批量操作"
   - "&7/lop version &7- 显示插件版本"
 
+# 三级权限相关消息
+permission-to-player: "&a已将玩家 &6{player} &a权限级别从 &e{from} &a设置为 &7{to}"
+permission-to-lowop: "&a已将玩家 &6{player} &a权限级别从 &7{from} &a设置为 &e{to}"
+permission-to-op: "&a已将玩家 &6{player} &a权限级别从 &7{from} &a设置为 &6{to}"
+permission-unchanged: "&7玩家 &6{player} &7权限级别未改变: &7{from}"
+detect-usage: "&c用法: /lowop detect <player>"
+detect-processing: "&7正在检测玩家 &6{player} &7的权限级别..."
+detect-result: "&6玩家 &f{player} &6检测到的权限级别: &7{level}"
+
 # 权限相关消息
 permission-enabled: "&a你已成为服务器管理员。"
 permission-disabled: "&c你的管理员权限已被移除。"
 permission-restored: "&a你的管理员权限已自动恢复。"
 admin-welcome: "&6欢迎回来，管理员！"
+lowop-welcome: "&e欢迎回来，低权限管理员！"
 
 # 操作结果消息
 operation-success: "&a操作成功完成。"
 operation-failed: "&c操作失败。"
 reload-success: "&a配置重载成功。"
 reload-failed: "&c配置重载失败。"
+config-reloaded: "&a配置重载成功。"
+config-reload-error: "&c配置重载失败。"
+processing-request: "&7正在处理请求: &f{player}"
+admin-enabled-executor: "&a已为玩家 &6{player} &a启用管理员权限"
+admin-disabled-executor: "&c已为玩家 &6{player} &c禁用管理员权限"
 
 # 错误消息
 no-permission: "&c你没有权限执行此操作。"
@@ -33,6 +48,15 @@ invalid-command: "&c无效的命令用法。输入 &6/lop help &c查看帮助。
 invalid-state: "&c状态参数必须是 'on' 或 'off'"
 cooldown-active: "&c请等待 &6{seconds} &c秒后再使用此命令。"
 rate-limit-exceeded: "&c操作过于频繁，请稍后再试。"
+player-not-found: "&c玩家 &6{player} &c未找到"
+invalid-operation: "&c无效的操作"
+invalid-page: "&c无效的页码"
+no-audit-entries: "&c审计日志为空"
+batch-usage: "&c用法: /lowop batch <on/off> <player1,player2,...>"
+batch-too-many-players: "&c批量操作玩家数超过上限 (10)"
+no-valid-players: "&c没有有效的玩家"
+batch-processing: "&7正在处理批量操作: &6{count} &7玩家 ({operation})"
+batch-completed: "&a批量操作完成: &6{success}&a/&6{total} &a成功"
 
 # 批量操作消息
 batch-result: "&a批量操作完成: &6{success}&a/&6{total} &a成功 ({operation})"
@@ -50,6 +74,13 @@ status-admin: "&a● &f{player} &7- &a管理员"
 status-default: "&c● &f{player} &7- &c默认"
 status-offline: "&7● &f{player} &7- &7离线"
 status-unknown: "&e● &f{player} &7- &e未知"
+status-overall: "&6系统状态: &7{total} 玩家, &a{admins} 管理员"
+status-player: "&6玩家 &f{player} &6状态: &7{status}"
+admin-status: "&a管理员"
+default-status: "&7普通玩家"
+player-status: "&7玩家"
+lowop-status: "&e低权限管理员"
+op-status: "&6全权限管理员"
 
 # 健康检查消息
 health-header: "&6系统健康状态:"

@@ -13,7 +13,7 @@ import java.util.logging.Level;
 public class StateManager {
 
     private final LowOP plugin;
-    private final Map<UUID, Boolean> playerStates;
+    private final Map<UUID, PermissionManager.PermissionLevel> playerStates;
     private FileConfiguration statesConfig;
     private File statesFile;
 
@@ -43,10 +43,11 @@ public class StateManager {
             for (String uuidStr : statesConfig.getConfigurationSection("players").getKeys(false)) {
                 try {
                     UUID uuid = UUID.fromString(uuidStr);
-                    boolean isAdmin = statesConfig.getBoolean("players." + uuidStr + ".admin", false);
-                    playerStates.put(uuid, isAdmin);
+                    String levelStr = statesConfig.getString("players." + uuidStr + ".level", "PLAYER");
+                    PermissionManager.PermissionLevel level = PermissionManager.PermissionLevel.valueOf(levelStr);
+                    playerStates.put(uuid, level);
                 } catch (IllegalArgumentException e) {
-                    plugin.getLogger().warning("Invalid UUID in player_states.yml: " + uuidStr);
+                    plugin.getLogger().warning("Invalid UUID or permission level in player_states.yml: " + uuidStr);
                 }
             }
         }
@@ -66,8 +67,8 @@ public class StateManager {
             }
             
             // Save all player states
-            for (Map.Entry<UUID, Boolean> entry : playerStates.entrySet()) {
-                statesConfig.set("players." + entry.getKey().toString() + ".admin", entry.getValue());
+            for (Map.Entry<UUID, PermissionManager.PermissionLevel> entry : playerStates.entrySet()) {
+                statesConfig.set("players." + entry.getKey().toString() + ".level", entry.getValue().name());
             }
             
             statesConfig.save(statesFile);
@@ -83,14 +84,14 @@ public class StateManager {
             interval * 20L, interval * 20L); // Convert seconds to ticks
     }
 
-    // State management methods
-    public boolean setPlayerAdminState(UUID playerUUID, boolean isAdmin, String executor) {
-        boolean previousState = playerStates.getOrDefault(playerUUID, false);
-        playerStates.put(playerUUID, isAdmin);
+    // New methods for three-level permission system
+    public PermissionManager.PermissionLevel setPlayerPermissionLevel(UUID playerUUID, PermissionManager.PermissionLevel level, String executor) {
+        PermissionManager.PermissionLevel previousLevel = playerStates.getOrDefault(playerUUID, PermissionManager.PermissionLevel.PLAYER);
+        playerStates.put(playerUUID, level);
         
         // Log the change
         if (plugin.getConfigManager().isAuditLogEnabled()) {
-            plugin.getAuditManager().logStateChange(playerUUID, previousState, isAdmin, executor);
+            plugin.getAuditManager().logPermissionLevelChange(playerUUID, previousLevel, level, executor);
         }
         
         // Auto-save if enabled
@@ -98,16 +99,11 @@ public class StateManager {
             saveStates();
         }
         
-        return previousState;
+        return previousLevel;
     }
 
-    public boolean getPlayerAdminState(UUID playerUUID) {
-        return playerStates.getOrDefault(playerUUID, false);
-    }
-
-    public boolean togglePlayerAdminState(UUID playerUUID, String executor) {
-        boolean currentState = getPlayerAdminState(playerUUID);
-        return setPlayerAdminState(playerUUID, !currentState, executor);
+    public PermissionManager.PermissionLevel getPlayerPermissionLevel(UUID playerUUID) {
+        return playerStates.getOrDefault(playerUUID, PermissionManager.PermissionLevel.PLAYER);
     }
 
     public void removePlayerState(UUID playerUUID) {
@@ -117,47 +113,80 @@ public class StateManager {
         }
     }
 
-    // Bulk operations
-    public int setMultiplePlayersAdminState(List<UUID> playerUUIDs, boolean isAdmin, String executor) {
+    // Bulk operations for three-level system
+    public int setMultiplePlayersPermissionLevel(List<UUID> playerUUIDs, PermissionManager.PermissionLevel level, String executor) {
         int count = 0;
         for (UUID uuid : playerUUIDs) {
-            if (setPlayerAdminState(uuid, isAdmin, executor)) {
-                count++;
-            }
+            setPlayerPermissionLevel(uuid, level, executor);
+            count++;
         }
         saveStates();
         return count;
     }
 
-    public Map<UUID, Boolean> getAllPlayerStates() {
+    public Map<UUID, PermissionManager.PermissionLevel> getAllPlayerStates() {
         return new HashMap<>(playerStates);
     }
 
-    public List<UUID> getPlayersWithAdminState(boolean isAdmin) {
+    public List<UUID> getPlayersWithPermissionLevel(PermissionManager.PermissionLevel level) {
         List<UUID> result = new ArrayList<>();
-        for (Map.Entry<UUID, Boolean> entry : playerStates.entrySet()) {
-            if (entry.getValue() == isAdmin) {
+        for (Map.Entry<UUID, PermissionManager.PermissionLevel> entry : playerStates.entrySet()) {
+            if (entry.getValue() == level) {
                 result.add(entry.getKey());
             }
         }
         return result;
     }
 
-    // Utility methods
+    // Utility methods for three-level system
     public boolean hasPlayerState(UUID playerUUID) {
         return playerStates.containsKey(playerUUID);
     }
 
-    public boolean hasAdminState(UUID playerUUID) {
-        return playerStates.getOrDefault(playerUUID, false);
+    public boolean hasPermissionLevel(UUID playerUUID, PermissionManager.PermissionLevel level) {
+        return playerStates.getOrDefault(playerUUID, PermissionManager.PermissionLevel.PLAYER) == level;
     }
 
     public int getTotalPlayers() {
         return playerStates.size();
     }
 
+    public int getPlayerCountByLevel(PermissionManager.PermissionLevel level) {
+        return getPlayersWithPermissionLevel(level).size();
+    }
+
+    // Backward compatibility methods
+    public boolean setPlayerAdminState(UUID playerUUID, boolean isAdmin, String executor) {
+        PermissionManager.PermissionLevel level = isAdmin ? PermissionManager.PermissionLevel.OP : PermissionManager.PermissionLevel.PLAYER;
+        PermissionManager.PermissionLevel previousLevel = setPlayerPermissionLevel(playerUUID, level, executor);
+        return previousLevel == PermissionManager.PermissionLevel.OP;
+    }
+
+    public boolean getPlayerAdminState(UUID playerUUID) {
+        return getPlayerPermissionLevel(playerUUID) == PermissionManager.PermissionLevel.OP;
+    }
+
+    public boolean togglePlayerAdminState(UUID playerUUID, String executor) {
+        boolean currentState = getPlayerAdminState(playerUUID);
+        return setPlayerAdminState(playerUUID, !currentState, executor);
+    }
+
+    public int setMultiplePlayersAdminState(List<UUID> playerUUIDs, boolean isAdmin, String executor) {
+        PermissionManager.PermissionLevel level = isAdmin ? PermissionManager.PermissionLevel.OP : PermissionManager.PermissionLevel.PLAYER;
+        return setMultiplePlayersPermissionLevel(playerUUIDs, level, executor);
+    }
+
+    public List<UUID> getPlayersWithAdminState(boolean isAdmin) {
+        PermissionManager.PermissionLevel level = isAdmin ? PermissionManager.PermissionLevel.OP : PermissionManager.PermissionLevel.PLAYER;
+        return getPlayersWithPermissionLevel(level);
+    }
+
+    public boolean hasAdminState(UUID playerUUID) {
+        return getPlayerAdminState(playerUUID);
+    }
+
     public int getAdminCount() {
-        return getPlayersWithAdminState(true).size();
+        return getPlayerCountByLevel(PermissionManager.PermissionLevel.OP);
     }
 
     public void cleanupOldData(int daysOld) {
