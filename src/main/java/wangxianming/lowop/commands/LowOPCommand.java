@@ -101,9 +101,9 @@ public class LowOPCommand implements CommandExecutor {
         if (args.length == 1) {
             // Show overall status
             int totalPlayers = plugin.getStateManager().getTotalPlayers();
-            int playerCount = plugin.getStateManager().getPlayerCount();
-            int lowopCount = plugin.getStateManager().getLowOPCount();
-            int opCount = plugin.getStateManager().getOPCount();
+            int playerCount = plugin.getStateManager().getPlayerCountByLevel(PermissionManager.PermissionLevel.PLAYER);
+            int lowopCount = plugin.getStateManager().getPlayerCountByLevel(PermissionManager.PermissionLevel.LOWOP);
+            int opCount = plugin.getStateManager().getPlayerCountByLevel(PermissionManager.PermissionLevel.OP);
             
             messageUtils.sendMessage(sender, "status-overall", Map.of(
                 "total", String.valueOf(totalPlayers),
@@ -208,7 +208,7 @@ public class LowOPCommand implements CommandExecutor {
         ));
 
         // Process batch operation
-        plugin.getStateManager().setMultiplePlayersPermissionLevel(validPlayerUUIDs, level, getExecutorName(sender))
+        plugin.getStateManager().setMultiplePlayersPermissionLevelAsync(validPlayerUUIDs, level, getExecutorName(sender))
             .thenAccept(successCount -> {
                 messageUtils.sendMessage(sender, "batch-completed", Map.of(
                     "success", String.valueOf(successCount),

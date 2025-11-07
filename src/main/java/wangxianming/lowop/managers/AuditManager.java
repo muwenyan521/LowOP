@@ -94,6 +94,19 @@ public class AuditManager {
         addLogEntry(logEntry);
     }
 
+    public void logPermissionDetection(String executor, String playerName, PermissionManager.PermissionLevel level) {
+        String timestamp = dateFormat.format(new Date());
+        
+        String logEntry = String.format("[%s] %s detected permission level for %s: %s",
+            timestamp, executor, playerName, level.name());
+        
+        addLogEntry(logEntry);
+        
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().info("Audit: " + logEntry);
+        }
+    }
+
     public void logCommandExecution(String command, String executor, boolean success) {
         String timestamp = dateFormat.format(new Date());
         

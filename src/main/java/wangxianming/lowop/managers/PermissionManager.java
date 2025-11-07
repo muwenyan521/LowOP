@@ -170,8 +170,8 @@ public class PermissionManager {
             return future;
         }
 
-        String adminGroup = plugin.getConfigManager().getAdminGroup();
-        String defaultGroup = plugin.getConfigManager().getDefaultGroup();
+        String adminGroup = plugin.getConfigManager().getOPGroup();
+        String defaultGroup = plugin.getConfigManager().getPlayerGroup();
 
         // Run permission changes asynchronously to avoid blocking the main thread
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -488,7 +488,7 @@ public class PermissionManager {
     }
 
     // Set multiple players permission levels by player names (支持离线玩家)
-    public CompletableFuture<Integer> setMultiplePlayersPermissionLevels(java.util.List<String> playerNames, PermissionLevel level, CommandSender executor) {
+    public CompletableFuture<Integer> setMultiplePlayersPermissionLevelsByName(java.util.List<String> playerNames, PermissionLevel level, CommandSender executor) {
         CompletableFuture<Integer> future = new CompletableFuture<>();
         
         if (playerNames.isEmpty()) {

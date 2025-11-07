@@ -366,4 +366,23 @@ public class ValidationUtils {
         }
         return validUUIDs;
     }
+
+    /**
+     * 解析权限级别字符串为枚举值
+     */
+    public static wangxianming.lowop.managers.PermissionManager.PermissionLevel parsePermissionLevel(String levelStr) {
+        if (levelStr == null) {
+            return wangxianming.lowop.managers.PermissionManager.PermissionLevel.PLAYER;
+        }
+        
+        switch (levelStr.toLowerCase()) {
+            case "op":
+                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.OP;
+            case "lowop":
+                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.LOWOP;
+            case "player":
+            default:
+                return wangxianming.lowop.managers.PermissionManager.PermissionLevel.PLAYER;
+        }
+    }
 }
