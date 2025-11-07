@@ -44,11 +44,14 @@ public class ConfigManager {
 
     private void validateConfig() {
         // Set defaults if missing
-        if (!config.contains("permission-groups.admin")) {
-            config.set("permission-groups.admin", "otherop");
+        if (!config.contains("permission-groups.player-group")) {
+            config.set("permission-groups.player-group", "default");
         }
-        if (!config.contains("permission-groups.default")) {
-            config.set("permission-groups.default", "default");
+        if (!config.contains("permission-groups.lowop-group")) {
+            config.set("permission-groups.lowop-group", "otherop");
+        }
+        if (!config.contains("permission-groups.op-group")) {
+            config.set("permission-groups.op-group", "op");
         }
         if (!config.contains("settings.audit-log-enabled")) {
             config.set("settings.audit-log-enabled", true);
@@ -134,7 +137,7 @@ public class ConfigManager {
 
     // Add missing method
     public List<String> getHelpMessage() {
-        return getMessageList("messages.help", Arrays.asList(
+        return getMessageList("help-message", Arrays.asList(
             "§6=== LowOP Help ===",
             "§e/lowop <player> [on|off|status] §7- 管理玩家权限",
             "§e/lowop batch <on|off> <player1,player2,...> §7- 批量操作",

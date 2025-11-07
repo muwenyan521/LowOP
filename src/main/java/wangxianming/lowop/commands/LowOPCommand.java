@@ -64,7 +64,7 @@ public class LowOPCommand implements CommandExecutor {
     }
 
     private boolean handleHelp(CommandSender sender) {
-        List<String> helpMessages = plugin.getConfigManager().getMessageList("messages.help", Arrays.asList(
+        List<String> helpMessages = plugin.getConfigManager().getMessageList("help-message", Arrays.asList(
             "§6=== LowOP Help ===",
             "§e/lowop <player> [player|lowop|op|status] §7- 管理玩家权限级别",
             "§e/lowop batch <player|lowop|op> <player1,player2,...> §7- 批量设置权限级别",
@@ -333,11 +333,11 @@ public class LowOPCommand implements CommandExecutor {
     private String getPermissionLevelDisplay(PermissionManager.PermissionLevel level) {
         switch (level) {
             case PLAYER:
-                return plugin.getConfigManager().getMessage("messages.player-status", "§7普通玩家");
+                return plugin.getConfigManager().getMessage("player-status", "§7普通玩家");
             case LOWOP:
-                return plugin.getConfigManager().getMessage("messages.lowop-status", "§e低权限OP");
+                return plugin.getConfigManager().getMessage("lowop-status", "§e低权限OP");
             case OP:
-                return plugin.getConfigManager().getMessage("messages.op-status", "§a管理员");
+                return plugin.getConfigManager().getMessage("op-status", "§a管理员");
             default:
                 return "§7未知";
         }

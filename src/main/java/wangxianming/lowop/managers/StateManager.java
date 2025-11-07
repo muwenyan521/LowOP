@@ -129,8 +129,12 @@ public class StateManager {
     public CompletableFuture<Boolean> setPlayerPermissionLevelAsync(UUID playerUUID, PermissionManager.PermissionLevel level, String executor) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                // First update the internal state
                 setPlayerPermissionLevel(playerUUID, level, executor);
-                return true;
+                
+                // Then apply the actual permission changes through PermissionManager
+                org.bukkit.command.CommandSender sender = plugin.getServer().getConsoleSender();
+                return plugin.getPermissionManager().setPlayerPermissionLevel(playerUUID, level, sender).join();
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to set permission level for player " + playerUUID + ": " + e.getMessage());
                 return false;

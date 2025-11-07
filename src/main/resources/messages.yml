@@ -120,6 +120,13 @@ notification-permission-change: "&6你的权限状态已变更: &f{status}"
 notification-batch-complete: "&a批量权限操作已完成。"
 notification-system-alert: "&c系统警报: &f{message}"
 
+# 权限状态消息
+admin-enabled: "&a你已成为服务器管理员。"
+admin-disabled: "&c你的管理员权限已被移除。"
+player-status: "&7普通玩家"
+lowop-status: "&e低权限管理员"
+op-status: "&6全权限管理员"
+
 # 调试消息
 debug-enabled: "&7调试模式已启用。"
 debug-disabled: "&7调试模式已禁用。"

@@ -79,8 +79,9 @@ public class HealthManager {
                 return false;
             }
 
-            // Test if we can execute a simple LuckPerms command
-            boolean commandSuccess = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp version");
+            // Test if we can execute a simple LuckPerms command without output
+            // Use a silent command that doesn't produce console output
+            boolean commandSuccess = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp info");
             if (!commandSuccess) {
                 plugin.getLogger().warning("LuckPerms health check: Command execution failed");
                 return false;

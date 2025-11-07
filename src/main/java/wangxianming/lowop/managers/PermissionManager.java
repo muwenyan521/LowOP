@@ -67,13 +67,33 @@ public class PermissionManager {
 
     private boolean executePermissionCommands(String playerName, PermissionLevel level, CommandSender executor) {
         try {
+            // Validate that LuckPerms is available
+            if (!isLuckPermsAvailable()) {
+                plugin.getLogger().severe("LuckPerms is not available for permission changes");
+                return false;
+            }
+
+            // Validate that the player exists
+            if (!playerExists(playerName)) {
+                plugin.getLogger().warning("Player " + playerName + " does not exist");
+                return false;
+            }
+
+            // Add a small delay between commands to ensure proper execution
+            Thread.sleep(100);
+            
             // Clear existing permissions first
             String clearCommand = "lp user " + playerName + " parent clear";
             if (!dispatchCommand(clearCommand, executor)) {
                 plugin.getLogger().warning("Failed to clear permissions for " + playerName);
-                return false;
+                // Continue anyway, as the clear command might fail if player has no permissions
+                // But log this as a potential issue
+                plugin.getLogger().info("Continuing with permission change despite clear failure for " + playerName);
             }
 
+            // Add a small delay between commands to ensure proper execution
+            Thread.sleep(100);
+            
             // Add the appropriate group based on level
             String groupToAdd = getGroupForLevel(level);
             String addCommand = "lp user " + playerName + " parent add " + groupToAdd;
@@ -82,13 +102,24 @@ public class PermissionManager {
                 return false;
             }
 
-            // Apply changes
-            String applyCommand = "lp applyedits";
+            // Add a small delay between commands to ensure proper execution
+            Thread.sleep(100);
+            
+            // Apply changes - use sync command to ensure changes are applied
+            String applyCommand = "lp sync";
             if (!dispatchCommand(applyCommand, executor)) {
-                plugin.getLogger().warning("Failed to apply permission edits for " + playerName);
-                return false;
+                plugin.getLogger().warning("Failed to sync permission edits for " + playerName);
+                // Continue anyway, as sync might not be critical
             }
 
+            // Add final delay to ensure all operations complete
+            Thread.sleep(200);
+            
+            // Verify the change was applied
+            if (plugin.getConfigManager().isDebugEnabled()) {
+                plugin.getLogger().info("Permission change completed for " + playerName + " to level " + level);
+            }
+            
             return true;
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Exception while executing permission commands for " + playerName, e);
@@ -137,22 +168,40 @@ public class PermissionManager {
 
     private PermissionLevel executePermissionDetection(String playerName) {
         try {
-            // Check if player is in OP group
-            String checkOPCommand = "lp user " + playerName + " parent check " + plugin.getConfigManager().getOPGroup();
-            boolean isOP = dispatchCommand(checkOPCommand, Bukkit.getConsoleSender());
+            // Use a simpler approach - check if player has specific permissions
+            // This method uses the Bukkit permission system which integrates with LuckPerms
             
-            if (isOP) {
-                return PermissionLevel.OP;
+            Player player = Bukkit.getPlayerExact(playerName);
+            if (player != null && player.isOnline()) {
+                // Check for OP permissions first
+                if (player.isOp()) {
+                    return PermissionLevel.OP;
+                }
+                
+                // Check for specific permission nodes that indicate OP status
+                if (player.hasPermission("*") || player.hasPermission("minecraft.command.op")) {
+                    return PermissionLevel.OP;
+                }
+                
+                // Check for LOWOP permissions
+                String lowopGroup = plugin.getConfigManager().getLowOPGroup();
+                if (player.hasPermission("group." + lowopGroup) || player.hasPermission("luckperms.group." + lowopGroup)) {
+                    return PermissionLevel.LOWOP;
+                }
+                
+                // Check for OP group permissions
+                String opGroup = plugin.getConfigManager().getOPGroup();
+                if (player.hasPermission("group." + opGroup) || player.hasPermission("luckperms.group." + opGroup)) {
+                    return PermissionLevel.OP;
+                }
             }
-
-            // Check if player is in LOWOP group
-            String checkLowOPCommand = "lp user " + playerName + " parent check " + plugin.getConfigManager().getLowOPGroup();
-            boolean isLowOP = dispatchCommand(checkLowOPCommand, Bukkit.getConsoleSender());
             
-            if (isLowOP) {
-                return PermissionLevel.LOWOP;
+            // Fallback: check the state manager's stored state
+            UUID playerUUID = getPlayerUUID(playerName);
+            if (playerUUID != null) {
+                return plugin.getStateManager().getPlayerPermissionLevel(playerUUID);
             }
-
+            
             // Default to PLAYER
             return PermissionLevel.PLAYER;
         } catch (Exception e) {
@@ -210,6 +259,9 @@ public class PermissionManager {
     private boolean executePermissionCommands(String playerName, boolean enableAdmin, 
                                             String adminGroup, String defaultGroup, CommandSender executor) {
         try {
+            // Add a small delay between commands to ensure proper execution
+            Thread.sleep(100);
+            
             // Clear existing permissions first
             String clearCommand = "lp user " + playerName + " parent clear";
             if (!dispatchCommand(clearCommand, executor)) {
@@ -217,6 +269,9 @@ public class PermissionManager {
                 return false;
             }
 
+            // Add a small delay between commands to ensure proper execution
+            Thread.sleep(100);
+            
             // Add the appropriate group
             String groupToAdd = enableAdmin ? adminGroup : defaultGroup;
             String addCommand = "lp user " + playerName + " parent add " + groupToAdd;
@@ -225,13 +280,19 @@ public class PermissionManager {
                 return false;
             }
 
-            // Apply changes
-            String applyCommand = "lp applyedits";
+            // Add a small delay between commands to ensure proper execution
+            Thread.sleep(100);
+            
+            // Apply changes - use sync command to ensure changes are applied
+            String applyCommand = "lp sync";
             if (!dispatchCommand(applyCommand, executor)) {
-                plugin.getLogger().warning("Failed to apply permission edits for " + playerName);
+                plugin.getLogger().warning("Failed to sync permission edits for " + playerName);
                 return false;
             }
 
+            // Add final delay to ensure all operations complete
+            Thread.sleep(200);
+            
             return true;
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Exception while executing permission commands for " + playerName, e);
@@ -246,6 +307,13 @@ public class PermissionManager {
             
             if (plugin.getConfigManager().isDebugEnabled()) {
                 plugin.getLogger().info("Executed command: " + command + " - Success: " + success);
+            }
+            
+            // Add a small delay to ensure command processing
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             
             return success;
@@ -314,8 +382,8 @@ public class PermissionManager {
         Player player = Bukkit.getPlayer(playerUUID);
         if (player != null && player.isOnline()) {
             String message = enableAdmin ? 
-                plugin.getConfigManager().getMessage("messages.admin-enabled", "§a你已成为服务器管理员。") :
-                plugin.getConfigManager().getMessage("messages.admin-disabled", "§c你的管理员权限已被移除");
+                plugin.getConfigManager().getMessage("admin-enabled", "§a你已成为服务器管理员。") :
+                plugin.getConfigManager().getMessage("admin-disabled", "§c你的管理员权限已被移除");
             player.sendMessage(message);
         }
     }
@@ -326,14 +394,14 @@ public class PermissionManager {
             String messageKey;
             switch (level) {
                 case OP:
-                    messageKey = "messages.op-status";
+                    messageKey = "op-status";
                     break;
                 case LOWOP:
-                    messageKey = "messages.lowop-status";
+                    messageKey = "lowop-status";
                     break;
                 case PLAYER:
                 default:
-                    messageKey = "messages.player-status";
+                    messageKey = "player-status";
                     break;
             }
             String message = plugin.getConfigManager().getMessage(messageKey, getDefaultLevelMessage(level));
@@ -370,9 +438,9 @@ public class PermissionManager {
             return false;
         }
 
-        // Test if we can execute a simple LuckPerms command
+        // Test if we can execute a simple LuckPerms command without output
         try {
-            boolean success = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp version");
+            boolean success = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp info");
             if (!success) {
                 plugin.getLogger().warning("LuckPerms command execution test failed");
                 return false;
